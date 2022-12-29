@@ -1,0 +1,97 @@
+# created by fftool
+
+units real
+boundary p p p
+
+atom_style full
+bond_style harmonic
+angle_style harmonic
+dihedral_style opls
+
+special_bonds lj/coul 0.0 0.0 0.5 # Cuidado com o campo de força
+
+# remove hybrid if not necessary
+ pair_style hybrid lj/cut/coul/long 12.0 12.0 colloid 10.0    # Usar hybrid quando temos mais de 1 potencial
+#pair_modify mix geometric tail yes #  Não usar quando há interfaces (tail)
+#pair_modify mix geometric
+kspace_style pppm 1.0e-5
+
+read_data data.lmp
+# read_restart restart1.lmp
+
+# remove pair style if not using hybrid
+
+pair_coeff    1    1 lj/cut/coul/long     0.065999     3.500000  # C2H C2H
+pair_coeff    2    2 lj/cut/coul/long     0.065999     3.500000  # C3H C3H
+pair_coeff    3    3 lj/cut/coul/long     0.030000     2.500000  # H H
+pair_coeff    4    4 lj/cut/coul/long     0.170000     3.120000  # OH OH
+pair_coeff    1    2 lj/cut/coul/long     0.065999     3.500000  # C2H C3H  ok
+pair_coeff    1    3 lj/cut/coul/long     0.044497     3.000000  # C2H H    ok
+pair_coeff    1    4 lj/cut/coul/long     0.050735     3.550000  # C2H OH   ok
+pair_coeff    2    3 lj/cut/coul/long     0.044497     3.000000  # C3H H    ok
+pair_coeff    2    4 lj/cut/coul/long     0.050735     3.550000  # C3H OH   ok
+pair_coeff    3    4 lj/cut/coul/long     0.034205     3.050000  # H OH
+
+
+pair_coeff    5    1 colloid             10.670708     3.499182  # core C2H
+pair_coeff    5    2 colloid             10.670708     3.499182  # core C3H
+pair_coeff    5    3 colloid              4.372767     3.017711  # core H
+pair_coeff    5    4 colloid             13.935097     3.335651  # core OH
+
+
+minimize 1.0e-4 1.0e-6 200 1000
+reset_timestep 0
+
+ fix SHAKE all shake 0.0001 20 0 b 4    # (deixa rígido)
+
+neighbor 2.0 bin
+# neigh_modify delay 0 every 1 check yes
+
+timestep 1.0
+
+variable TK equal 300.0
+variable PBAR equal 1.0
+
+velocity all create ${TK} 12345
+
+thermo_style custom step cpu etotal ke pe evdwl ecoul elong temp press vol density
+thermo 100
+
+
+################# NVT
+
+fix TSTAT all nvt temp ${TK} ${TK} 100
+
+dump TRAJnvt all custom 100 dump-NVT-eq.lammpstrj id mol type element q x y z
+dump_modify TRAJnvt element C C H O core
+
+run 1000000
+
+unfix TSTAT
+#unfix TRAJnvt
+
+group functional       type 1 2 3 4                                                # <- define group water
+compute profile1 functional    chunk/atom bin/1d y center 0.1
+
+fix density1 functional    ave/chunk 10 100 1000 profile1 density/mass ave running file density_nvt_functional.dat overwrite
+
+################# NPT
+
+fix TPSTAT all npt temp ${TK} ${TK} 100 iso ${PBAR} ${PBAR} 1000
+
+dump TRAJnpt all custom 100 dump-NPT-eq.lammpstrj id mol type element q xu yu zu
+dump_modify TRAJnpt element C C H O core
+
+run 1000000
+
+unfix TPSTAT
+#unfix TRAJnpt
+
+group functional       type 1 2 3 4                                              # <- define group water
+compute profile2 water    chunk/atom bin/1d y center 0.1
+
+fix density2 functional    ave/chunk 10 100 1000 profile1 density/mass ave running file density_npt_functional.dat overwrite
+
+#################
+
+write_data data.eq.lmp

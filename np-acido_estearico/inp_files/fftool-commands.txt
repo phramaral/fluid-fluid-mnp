@@ -1,0 +1,1 @@
+python fftool 57743 spc.zmat 4578 dodecane.zmat -b 120,240,120 -l

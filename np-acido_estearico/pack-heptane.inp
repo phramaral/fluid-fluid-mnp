@@ -1,0 +1,10 @@
+# created by fftool
+tolerance 2.0
+filetype xyz
+output simbox-heptane.xyz
+
+structure heptane_pack.xyz
+  number 6132
+  inside box -58.5000 -58.5000 -58.5000 58.5000 58.5000 58.5000
+  outside sphere 0. 0. 0. 39.0
+end structure
