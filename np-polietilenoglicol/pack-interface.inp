@@ -1,0 +1,16 @@
+# created by fftool
+tolerance 2.5
+filetype xyz
+output simbox-interface.xyz
+
+structure spc_pack.xyz
+  number 56727
+  inside box -58.5000 -118.5000 -58.5000 58.5000 -1.5000 58.5000
+  outside sphere 0. 0. 0. 25.000
+end structure
+
+structure heptane_pack.xyz
+  number 7026
+  inside box -58.5000 1.5000 -58.5000 58.5000 118.5000 58.5000
+   outside sphere 0. 0. 0. 25.000
+end structure
